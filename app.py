@@ -1,4 +1,3 @@
-
 import os 
 import time 
 import psycopg2 
@@ -10,6 +9,7 @@ from selenium.webdriver.chrome.options import Options
 import logging
 import traceback
 from dotenv import load_dotenv
+from datetime import datetime
 
 
 # Headless Chrome inside Docker 
@@ -22,12 +22,7 @@ def get_driver():
     chrome_options.add_argument("--window-size=1920,1080") 
     return webdriver.Chrome(options=chrome_options)
 
-driver=get_driver()
-url = "https://play.pakakumi.com/"
-driver.get(url)
-wait = WebDriverWait(driver, 10)
 
-# for production i will swtich from printing on console to logging
 #logging config
 logging.basicConfig(
     level=logging.INFO,
@@ -36,15 +31,6 @@ logging.basicConfig(
 
 load_dotenv()
 
-#database config
-"""DB_CONFIG={
-    "host":os.getenv('DB_HOST'),
-    
-    'database':os.getenv('DB_NAME'),
-    'user':os.getenv('DB_USER'),
-    'password':os.getenv('DB_PASSWORD'),
-    'port':os.getenv('DB_PORT')
-}"""
 # we have now configed our db let now define a function to connect to the db
 def get_db_connection():
     try:
@@ -55,7 +41,7 @@ def get_db_connection():
             dbname=os.getenv('DB_NAME'),
             user=os.getenv('DB_USER'),
             password=os.getenv('DB_PASSWORD'),
-            #sslmode="require"
+            sslmode="require"#we  comment this for local db
             )
         logging.info('Database connection established')
         return conn
@@ -64,6 +50,7 @@ def get_db_connection():
         tb=traceback.format_exc()
         logging.debug(f"Traceback details:\n{tb}")
         raise
+
 # we have connected to our db let define how to  insert data
 def insert_data(bust_number,hash_code,timestamp):
     if bust_number=="Login":
@@ -89,9 +76,11 @@ def insert_data(bust_number,hash_code,timestamp):
             raise
         finally:
             conn.close()
+
 #our connection is ready for data lets now  make a "pipeline" to get the data
-def scrape_data():
-    previous_entry= None
+def scrape_data(driver, url):
+    wait = WebDriverWait(driver, 10)
+    previous_entry = None
 
     while True:
         try:
@@ -130,14 +119,20 @@ def scrape_data():
                 logging.error(f"Reconnection failed",exc_info=True)
                 tb_reconnect = traceback.format_exc() 
                 logging.debug(f"Reconnection traceback details:\n{tb_reconnect}")
+                # Even if reconnection fails, ensure wait exists
+                wait = WebDriverWait(driver, 10)
 
 
 if __name__ == "__main__":
     logging.info("Starting Pakakumi Scraper")
     logging.info("Data will be saved to PostgreSQL database")
 
+    url = "https://play.pakakumi.com/"
+    driver = get_driver()
+    
     try:
-        scrape_data()
+        driver.get(url)
+        scrape_data(driver, url)
     except KeyboardInterrupt:
         logging.warning("Scraper stopped by user (KeyboardInterrupt)")
     except Exception as e:
@@ -148,4 +143,3 @@ if __name__ == "__main__":
     finally:
         driver.quit()
         logging.info("WebDriver closed")
-
