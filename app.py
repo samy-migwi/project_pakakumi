@@ -84,9 +84,10 @@ def scrape_data(driver, url):
 
     while True:
         try:
-            bust_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.css-19toqs6")))
-            hash_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.css-10zyika")))
-
+            #bust_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "a.css-hwpcld")))
+            bust_element=wait.until(EC.presence_of_element_located((By.XPATH, "//span[contains(text(), 'x')][1]")))
+            # old one hash_element = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "input.css-4k9hx8")))
+            hash_element = wait.until(EC.presence_of_element_located((By.XPATH, "//input[@readonly or @type='text' or contains(@placeholder, 'Hash')]")))
             bust_number = bust_element.text
             #let remove x  in the bust number 
             #bust_number = float(bust_text[:-1])
